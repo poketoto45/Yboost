@@ -1,4 +1,4 @@
 from django.http import HttpResponse
 
-def hello(request):
-    return HttpResponse("Hello World from Django on Scalingo 🚀")
+def home(request):
+    return HttpResponse("Hello World 🌍")
