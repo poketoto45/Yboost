@@ -1,1 +1,1 @@
-web: gunicorn golang.wsgi --log-file -
+web: go run golang/main.go
