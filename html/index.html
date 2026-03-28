@@ -2,12 +2,16 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ma Bibliothèque de Jeux</title>
+    <title>Ma Bibliothèque Steam</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <header>
+        <form method="GET" action="/">
+            <label for="iduser">Steam ID :</label>
+            <input id="iduser" name="iduser" type="text" placeholder="Entrez un SteamID64" required>
+            <button type="submit">Rechercher</button>
+        </form>
         <h1>🎮 Ma Collection Steam</h1>
     </header>
 
@@ -16,20 +20,17 @@
         <div class="game-card">
             <div class="game-info">
                 <h2>{{.Name}}</h2>
-                <p class="id">ID: {{.ID}}</p>
-                
+                <p class="id">AppID: {{.AppID}}</p>
                 <div class="stats">
-                    <span><strong>Total:</strong> {{.Playtime_forever}} min</span>
-                    <span><strong>2 dernières semaines:</strong> {{.Playtime_2weeks}} min</span>
-                </div>
-
-                <div class="platforms">
-                    <small>Windows: {{.Playtime_windows_forever}}m | Mac: {{.Playtime_mac_forever}}m | Linux: {{.Playtime_linux_forever}}m</small>
+                    <span><strong>Total:</strong> {{.PlaytimeForever}} min</span>
+                    {{if .Playtime2Weeks}}
+                    <span><strong>Récent:</strong> {{.Playtime2Weeks}} min</span>
+                    {{end}}
                 </div>
             </div>
         </div>
         {{else}}
-        <p>Aucun jeu trouvé.</p>
+        <p>Aucun jeu trouvé. Vérifiez votre SteamID ou votre clé API.</p>
         {{end}}
     </main>
 </body>

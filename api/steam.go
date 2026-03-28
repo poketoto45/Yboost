@@ -1,35 +1,42 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 )
 
-func ChooseArtisteAll(apiKey string, appid int, lang string) ([]byte, error) {
-	url := fmt.Sprintf("https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=%s&appid=%d&l=%s&format=json",
-		apiKey, appid, lang)
-	response, err := http.Get(url)
+// SteamResponse correspond à la hiérarchie réelle de l'API Steam
+type SteamResponse struct {
+	Response struct {
+		Games []OwnedGame `json:"games"`
+	} `json:"response"`
+}
 
+type OwnedGame struct {
+	AppID           int    `json:"appid"`
+	Name            string `json:"name"`
+	PlaytimeForever int    `json:"playtime_forever"`
+	ImgIconURL      string `json:"img_icon_url"`
+	Playtime2Weeks  int    `json:"playtime_2weeks"`
+}
+
+func GetOwnedGames(apiKey string, steamID string) ([]OwnedGame, error) {
+	url := fmt.Sprintf("https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=1&format=json", apiKey, steamID)
+
+	resp, err := http.Get(url)
 	if err != nil {
-
-		fmt.Println("Erreur lors de la requête HTTP :", err)
-
 		return nil, err
+	}
+	defer resp.Body.Close()
 
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	var data SteamResponse
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, err
 	}
 
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-
-	if err != nil {
-
-		fmt.Println("Erreur lors de la lecture de la réponse :", err)
-
-		return nil, err
-
-	}
-
-	return body, nil
+	return data.Response.Games, nil
 }
