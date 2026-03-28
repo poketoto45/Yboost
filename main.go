@@ -26,24 +26,21 @@ type game struct {
 }
 
 func main() {
-	fmt.Println("Hello, World!")
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello World")
-	})
+	fs := http.FileServer(http.Dir("front/static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	http.ListenAndServe(":"+port, nil)
+	http.HandleFunc("/", homeHandler)
 
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("front/static"))))
-
-	// Lier la page d'accueil à ton handler
-	http.HandleFunc("/home", homeHandler)
-
-	http.ListenAndServe(":"+port, nil)
+	fmt.Printf("Serveur lancé sur http://localhost:%s\n", port)
+	err := http.ListenAndServe(":"+port, nil)
+	if err != nil {
+		fmt.Printf("Erreur lors du lancement du serveur : %v\n", err)
+	}
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
