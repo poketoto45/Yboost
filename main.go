@@ -48,7 +48,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	var users []game
 	marshall1(body, &users)
 
-	tpl, err := template.ParseFiles("front/page/index.html")
+	tpl, err := template.ParseFiles("html/index.html")
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
