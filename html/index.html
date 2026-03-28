@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Bibliothèque de Jeux</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>🎮 Ma Collection Steam</h1>
+    </header>
+
+    <main class="game-container">
+        {{range .}}
+        <div class="game-card">
+            <div class="game-info">
+                <h2>{{.Name}}</h2>
+                <p class="id">ID: {{.ID}}</p>
+                
+                <div class="stats">
+                    <span><strong>Total:</strong> {{.Playtime_forever}} min</span>
+                    <span><strong>2 dernières semaines:</strong> {{.Playtime_2weeks}} min</span>
+                </div>
+
+                <div class="platforms">
+                    <small>Windows: {{.Playtime_windows_forever}}m | Mac: {{.Playtime_mac_forever}}m | Linux: {{.Playtime_linux_forever}}m</small>
+                </div>
+            </div>
+        </div>
+        {{else}}
+        <p>Aucun jeu trouvé.</p>
+        {{end}}
+    </main>
+</body>
+</html>
