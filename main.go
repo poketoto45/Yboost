@@ -31,7 +31,9 @@ func main() {
 		port = "8080"
 	}
 
-	fs := http.FileServer(http.Dir("front/static"))
+	// CORRECTION : Ton dossier s'appelle "html", pas "front/static"
+	// On sert tout le dossier "html" pour le CSS
+	fs := http.FileServer(http.Dir("html"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	http.HandleFunc("/", homeHandler)
@@ -39,18 +41,29 @@ func main() {
 	fmt.Printf("Serveur lancé sur http://localhost:%s\n", port)
 	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
-		fmt.Printf("Erreur lors du lancement du serveur : %v\n", err)
+		fmt.Printf("Erreur : %v\n", err)
 	}
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := api.ChooseArtisteAll()
+	if err != nil {
+		http.Error(w, "Erreur API", 500)
+		return
+	}
+
+	// Debug : affiche le début de ce que reçoit Go dans les logs Render
+	if len(body) > 0 {
+		fmt.Printf("Réponse reçue (50 premiers caractères): %s\n", string(body[:50]))
+	}
+
 	var users []game
 	marshall1(body, &users)
 
+	// CORRECTION : Le chemin doit être exact
 	tpl, err := template.ParseFiles("html/index.html")
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, "Template introuvable : "+err.Error(), 500)
 		return
 	}
 
