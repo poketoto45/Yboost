@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 )
 
-func ChooseArtisteAll() ([]byte, error) {
-
-	url := os.Getenv("STEAM_API_URL")
+func ChooseArtisteAll(apiKey string, appid int, lang string) ([]byte, error) {
+	url := fmt.Sprintf("https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=%s&appid=%d&l=%s&format=json",
+		apiKey, appid, lang)
 	response, err := http.Get(url)
 
 	if err != nil {
