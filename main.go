@@ -27,7 +27,7 @@ func main() {
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. Récupération des variables
-	apiKey := os.Getenv("apiKey")
+	apiKey := os.Getenv("API_KEY")
 	steamID := r.URL.Query().Get("iduser")
 
 	// Fallback sur le STEAM_ID par défaut de Render si l'input est vide
