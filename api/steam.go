@@ -20,6 +20,7 @@ type OwnedGame struct {
 	PlaytimeForever int    `json:"playtime_forever"`
 	ImgIconURL      string `json:"img_icon_url"`
 	Playtime2Weeks  int    `json:"playtime_2weeks"`
+
 }
 
 func GetOwnedGames(apiKey string, steamID string) ([]OwnedGame, error) {
