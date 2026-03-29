@@ -24,7 +24,7 @@ type OwnedGame struct {
 }
 
 func GetOwnedGames(apiKey string, steamID string) ([]OwnedGame, error) {
-	url := "https://api.steampowered.com/IPlayerService/GetOwnedGames/v001/?key=DCF9D0958A55FA70239B0AED6188D100&steamid=76561199111246227&format=json&include_appinfo=1"
+	url := fmt.Sprintf("https://api.steampowered.com/IPlayerService/GetOwnedGames/v001/?key=%s&steamid=%s&format=json&include_appinfo=1", apiKey, steamID)
 	fmt.Println("Appel de l'API pour le SteamID:", steamID) // Ne pas afficher la clé pour la sécurité
 
 	resp, err := http.Get(url)
