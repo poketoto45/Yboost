@@ -2,50 +2,57 @@
 <html lang="fr">
     <head>
         <meta charset="UTF-8" />
-        <title>Ma Bibliothèque Steam</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Steam Library Explorer</title>
         <link rel="stylesheet" href="/static/style.css" />
     </head>
     <body>
         <header>
-            <form method="GET" action="/">
-                <label for="iduser">Steam ID :</label>
-                <input
-                    id="iduser"
-                    name="iduser"
-                    type="text"
-                    placeholder="Entrez un SteamID64"
-                    required
-                />
-                <button type="submit">Rechercher</button>
-            </form>
+            <div class="search-box">
+                <form method="GET" action="/">
+                    <input
+                        type="text"
+                        name="iduser"
+                        placeholder="Entrez un SteamID64..."
+                        required
+                    />
+                    <button type="submit">Afficher la bibliothèque</button>
+                </form>
+            </div>
             <h1>🎮 Ma Collection Steam</h1>
         </header>
 
         <main class="game-container">
             {{range .}}
             <div class="game-card">
+                <img
+                    class="game-banner"
+                    src="https://cdn.akamai.steamstatic.com/steam/apps/{{.AppID}}/header.jpg"
+                    onerror="this.src='https://via.placeholder.com/460x215/2a475e/ffffff?text={{.Name}}'"
+                    alt="{{.Name}}"
+                />
+
                 <div class="game-info">
-                    <h1>
-                        <img src="{{.ImgIconURL}}" alt="Icon" class="icon" />
-                    </h1>
                     <h2>{{.Name}}</h2>
-                    <p class="id">AppID: {{.AppID}}</p>
                     <div class="stats">
-                        <span
-                            ><strong>Total:</strong> {{.PlaytimeForever}}
-                            min</span
-                        >
-                        {{if .Playtime2Weeks}}
-                        <span
-                            ><strong>Récent:</strong> {{.Playtime2Weeks}}
-                            min</span
-                        >
-                        {{end}}
+                        <p>
+                            Temps de jeu :
+                            <span class="playtime"
+                                >{{.PlaytimeForever}} min</span
+                            >
+                        </p>
+                        <p class="appid-text">AppID : {{.AppID}}</p>
                     </div>
                 </div>
             </div>
             {{else}}
-            <p>Aucun jeu trouvé. Vérifiez votre SteamID ou votre clé API.</p>
+            <div class="no-results">
+                <p>
+                    Aucun jeu trouvé. Vérifiez que le profil est
+                    <strong>Public</strong>.
+                </p>
+                <p><small>ID de test : 76561198084134106</small></p>
+            </div>
             {{end}}
         </main>
     </body>
