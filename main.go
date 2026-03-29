@@ -58,6 +58,9 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Fichier HTML introuvable", 500)
 		return
 	}
-
+	err = SyncTopGames(steamID, games)
+	if err != nil {
+	    fmt.Println("Erreur lors de la sauvegarde Supabase:", err)
+	}
 	tpl.Execute(w, games)
 }
