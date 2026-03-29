@@ -17,7 +17,7 @@ func main() {
 	// 2. Configuration du port pour Render
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "6543"
 	}
 
 	// 3. Gestion des fichiers statiques (CSS)
