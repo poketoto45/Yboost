@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-// SteamResponse correspond à la hiérarchie réelle de l'API Steam
+// Structure pour matcher le JSON de Steam
 type SteamResponse struct {
 	Response struct {
 		Games []OwnedGame `json:"games"`
@@ -18,26 +18,32 @@ type OwnedGame struct {
 	AppID           int    `json:"appid"`
 	Name            string `json:"name"`
 	PlaytimeForever int    `json:"playtime_forever"`
-	ImgIconURL      string `json:"img_icon_url"`
-	Playtime2Weeks  int    `json:"playtime_2weeks"`
-
 }
 
 func GetOwnedGames(apiKey string, steamID string) ([]OwnedGame, error) {
-	url := fmt.Sprintf("https://api.steampowered.com/IPlayerService/GetOwnedGames/v001/?key=%s&steamid=%s&format=json&include_appinfo=1", apiKey, steamID)
-	fmt.Println("Appel de l'API pour le SteamID:", steamID) // Ne pas afficher la clé pour la sécurité
+	// Correction de l'URL (v0001 avec 3 zéros)
+	url := fmt.Sprintf("https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json&include_appinfo=1", apiKey, steamID)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("erreur réseau : %v", err)
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	// SECURITÉ : Si Steam renvoie une erreur (403, 404, 500), on ne parse pas le JSON
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Steam a répondu avec le code %d (Clé API ou ID invalide)", resp.StatusCode)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 
 	var data SteamResponse
 	if err := json.Unmarshal(body, &data); err != nil {
-		return nil, err
+		// C'est ici que ça bloquait. On affiche un bout du body pour débugger au cas où.
+		return nil, fmt.Errorf("le JSON est invalide : %v", err)
 	}
 
 	return data.Response.Games, nil
