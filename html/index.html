@@ -31,7 +31,12 @@
                     onerror="this.src='https://via.placeholder.com/460x215/2a475e/ffffff?text={{.Name}}'"
                     alt="{{.Name}}"
                 />
-
+                <div class="achievements-badge">
+                    {{if .Achievements}} 🏆 Succès : {{len .Achievements}}
+                    {{else}}
+                    <small>Pas de succès ou profil privé</small>
+                    {{end}}
+                </div>
                 <div class="game-info">
                     <h2>{{.Name}}</h2>
                     <div class="stats">
