@@ -33,8 +33,6 @@ func SyncTopGames(steamID string, allGames []api.OwnedGame) error {
 		names[i] = formatGame(allGames[i])
 	}
 
-	// SQL brut : INSERT ... ON CONFLICT (steam_id) DO UPDATE
-	// C'est la méthode la plus fiable avec Supabase/Postgres
 	sql := `
 		INSERT INTO "steamDB" (steam_id, game1, game2, game3, game4, game5)
 		VALUES (?, ?, ?, ?, ?, ?)

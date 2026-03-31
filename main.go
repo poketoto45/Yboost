@@ -19,7 +19,6 @@ func main() {
 		port = "8080"
 	}
 
-	// Servir les fichiers statiques (CSS)
 	fs := http.FileServer(http.Dir("html"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
@@ -29,7 +28,7 @@ func main() {
 	http.HandleFunc("/top", topGamesHandler)
 	http.HandleFunc("/delete", deleteHandler)
 
-	fmt.Printf("🚀 Serveur lancé sur le port %s...\n", port)
+	fmt.Printf("Serveur lancé sur le port %s...\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("Erreur serveur : ", err)
 	}
@@ -49,7 +48,6 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 	games, err := api.GetOwnedGames(apiKey, steamID)
 	if err != nil {
-		// On affiche quand même la page mais avec une erreur
 		renderTemplate(w, "html/index.html", nil, steamID)
 		return
 	}
