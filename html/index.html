@@ -20,10 +20,23 @@
                 </form>
             </div>
             <h1>🎮 Ma Collection Steam</h1>
+
+            {{if .SteamID}}
+            <div class="crud-buttons">
+                <button id="btn-sync" onclick="syncToSupabase()">
+                    💾 Sauvegarder le Top 5 dans Supabase
+                </button>
+                <button id="btn-top" onclick="showTopGames()">
+                    📊 Voir le tableau Supabase
+                </button>
+            </div>
+            <div id="sync-message"></div>
+            <div id="top-table-container"></div>
+            {{end}}
         </header>
 
         <main class="game-container">
-            {{range .}}
+            {{range .Games}}
             <div class="game-card">
                 <img
                     class="game-banner"
@@ -31,12 +44,6 @@
                     onerror="this.src='https://via.placeholder.com/460x215/2a475e/ffffff?text={{.Name}}'"
                     alt="{{.Name}}"
                 />
-                <div class="achievements-badge">
-                    {{if .Achievements}} 🏆 Succès : {{len .Achievements}}
-                    {{else}}
-                    <small>Pas de succès ou profil privé</small>
-                    {{end}}
-                </div>
                 <div class="game-info">
                     <h2>{{.Name}}</h2>
                     <div class="stats">
@@ -60,5 +67,74 @@
             </div>
             {{end}}
         </main>
+
+        <script>
+            const steamID = "{{.SteamID}}";
+
+            function syncToSupabase() {
+                const btn = document.getElementById("btn-sync");
+                const msg = document.getElementById("sync-message");
+                btn.disabled = true;
+                btn.textContent = "⏳ Sauvegarde en cours...";
+                msg.textContent = "";
+
+                fetch(`/sync?iduser=${steamID}`)
+                    .then((r) => r.json())
+                    .then((data) => {
+                        if (data.error) {
+                            msg.textContent = "❌ Erreur : " + data.error;
+                            msg.style.color = "#ff6b6b";
+                        } else {
+                            msg.textContent = "✅ " + data.message;
+                            msg.style.color = "#66c0f4";
+                        }
+                    })
+                    .catch(() => {
+                        msg.textContent = "❌ Erreur réseau";
+                        msg.style.color = "#ff6b6b";
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.textContent =
+                            "💾 Sauvegarder le Top 5 dans Supabase";
+                    });
+            }
+
+            function showTopGames() {
+                const container = document.getElementById(
+                    "top-table-container",
+                );
+                container.innerHTML =
+                    '<p style="color:#66c0f4">⏳ Chargement...</p>';
+
+                fetch(`/top?iduser=${steamID}`)
+                    .then((r) => r.json())
+                    .then((games) => {
+                        if (!games.length) {
+                            container.innerHTML =
+                                '<p style="color:#ff6b6b">Aucune donnée en base. Cliquez sur Sauvegarder d\'abord.</p>';
+                            return;
+                        }
+                        let html = `<table class="top-table">
+                        <thead><tr><th>#</th><th>Jeu</th><th>Temps de jeu</th></tr></thead>
+                        <tbody>`;
+                        games.forEach((g, i) => {
+                            const hours = Math.floor(g.PlaytimeForever / 60);
+                            const mins = g.PlaytimeForever % 60;
+                            html += `<tr>
+                            <td>${i + 1}</td>
+                            <td>${g.Name}</td>
+                            <td>${hours}h ${mins}min</td>
+                        </tr>`;
+                        });
+                        html += "</tbody></table>";
+                        container.innerHTML = html;
+                    })
+                    .catch(() => {
+                        container.innerHTML =
+                            '<p style="color:#ff6b6b">❌ Erreur réseau</p>';
+                    });
+            }
+        </script>
     </body>
 </html>

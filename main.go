@@ -1,11 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
-	"log"
 
 	"main.go/api"
 )
@@ -20,7 +21,10 @@ func main() {
 
 	fs := http.FileServer(http.Dir("html"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	http.HandleFunc("/", homeHandler)
+	http.HandleFunc("/sync", syncHandler)       // bouton "Sauvegarder"
+	http.HandleFunc("/top", topGamesHandler)    // bouton "Voir le tableau"
 
 	fmt.Printf("Serveur lancé sur le port %s...\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
@@ -46,14 +50,73 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := SyncTopGames(steamID, games); err != nil {
-		log.Println("Erreur sauvegarde Supabase :", err)
-	}
-
 	tpl, err := template.ParseFiles("html/index.html")
 	if err != nil {
 		http.Error(w, "Fichier HTML introuvable", 500)
 		return
 	}
-	tpl.Execute(w, games)
+
+	data := struct {
+		Games   []api.OwnedGame
+		SteamID string
+	}{
+		Games:   games,
+		SteamID: steamID,
+	}
+
+	tpl.Execute(w, data)
+}
+
+// /sync : appel AJAX depuis le bouton "Sauvegarder dans Supabase"
+func syncHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	apiKey := os.Getenv("API_KEY")
+	steamID := r.URL.Query().Get("iduser")
+	if steamID == "" {
+		steamID = os.Getenv("STEAM_ID")
+	}
+
+	if apiKey == "" || steamID == "" {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "steamID ou API_KEY manquant"})
+		return
+	}
+
+	games, err := api.GetOwnedGames(apiKey, steamID)
+	if err != nil {
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	if err := SyncTopGames(steamID, games); err != nil {
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "ok",
+		"message": "Top 5 sauvegardé dans Supabase !",
+	})
+}
+
+// /top : retourne le tableau depuis Supabase
+func topGamesHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	steamID := r.URL.Query().Get("iduser")
+	if steamID == "" {
+		steamID = os.Getenv("STEAM_ID")
+	}
+
+	games, err := GetTopGamesFromDB(steamID)
+	if err != nil {
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(games)
 }

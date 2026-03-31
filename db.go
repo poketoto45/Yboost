@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var db *gorm.DB
@@ -17,7 +18,6 @@ func initDB() {
 		log.Fatal("DATABASE_URL manquant")
 	}
 
-	// Supabase requiert SSL
 	if !strings.Contains(dsn, "sslmode") {
 		if strings.Contains(dsn, "?") {
 			dsn += "&sslmode=require"
@@ -27,13 +27,11 @@ func initDB() {
 	}
 
 	var err error
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		log.Fatalf("Connexion DB impossible : %v", err)
-	}
-
-	if err := db.AutoMigrate(&TopGame{}); err != nil {
-		log.Fatalf("Migration échouée : %v", err)
 	}
 
 	sqlDB, err := db.DB()
@@ -44,5 +42,5 @@ func initDB() {
 		log.Fatalf("Ping DB échoué : %v", err)
 	}
 
-	log.Println("✓ Base de données connectée et migrée")
+	log.Println("✓ Base de données connectée")
 }
