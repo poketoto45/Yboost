@@ -33,18 +33,33 @@ func SyncTopGames(steamID string, allGames []api.OwnedGame) error {
 		names[i] = formatGame(allGames[i])
 	}
 
-	// UPDATE & CREATE (Upsert)
-	// On cherche par SteamID, si trouvé on Update, sinon on Create
-	var entry SteamDB
-	result := db.Where("steam_id = ?", steamID).First(&entry)
+	// Vérifie si une ligne existe déjà pour ce steamID
+	var count int64
+	db.Model(&SteamDB{}).Where("steam_id = ?", steamID).Count(&count)
 
-	entry.SteamID = steamID
-	entry.Game1, entry.Game2, entry.Game3, entry.Game4, entry.Game5 = names[0], names[1], names[2], names[3], names[4]
-
-	if result.Error != nil {
+	if count == 0 {
+		// INSERT
+		entry := SteamDB{
+			SteamID: steamID,
+			Game1:   names[0],
+			Game2:   names[1],
+			Game3:   names[2],
+			Game4:   names[3],
+			Game5:   names[4],
+		}
 		return db.Create(&entry).Error
 	}
-	return db.Save(&entry).Error
+
+	// UPDATE direct sans passer par Save
+	return db.Model(&SteamDB{}).
+		Where("steam_id = ?", steamID).
+		Updates(map[string]interface{}{
+			"game1": names[0],
+			"game2": names[1],
+			"game3": names[2],
+			"game4": names[3],
+			"game5": names[4],
+		}).Error
 }
 
 func GetTopGamesFromDB(steamID string) (*SteamDB, error) {
