@@ -3,31 +3,39 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Steam Explorer</title>
+        <title>Steam Library Explorer</title>
         <link rel="stylesheet" href="/static/style.css" />
     </head>
     <body>
         <header>
-            <h1>🎮 Steam Collector</h1>
             <div class="search-box">
                 <form method="GET" action="/">
                     <input
                         type="text"
                         name="iduser"
-                        placeholder="SteamID64..."
-                        value="{{.SteamID}}"
+                        placeholder="Entrez un SteamID64..."
+                        required
                     />
-                    <button type="submit">Rechercher</button>
+                    <button type="submit">Afficher la bibliothèque</button>
                 </form>
             </div>
+            <h1>🎮 Ma Collection Steam</h1>
 
+            {{if .SteamID}}
             <div class="crud-buttons">
-                <button id="btn-sync" onclick="sync()">💾 Synchroniser</button>
-                <button id="btn-top" onclick="showTop()">📊 Voir le Top</button>
-                <button id="btn-delete" onclick="remove()">🗑️ Supprimer</button>
+                <button id="btn-sync" onclick="syncToSupabase()">
+                    💾 Sauvegarder le Top 5 dans Supabase
+                </button>
+                <button id="btn-top" onclick="showTopGames()">
+                    📊 Voir le tableau Supabase
+                </button>
+                <button id="btn-delete" onclick="deleteData()">
+                    🗑️ Supprimer
+                </button>
             </div>
-            <div id="status-msg" style="margin-top: 15px"></div>
+            <div id="sync-message"></div>
             <div id="top-table-container"></div>
+            {{end}}
         </header>
 
         <main class="game-container">
@@ -36,57 +44,99 @@
                 <img
                     class="game-banner"
                     src="https://cdn.akamai.steamstatic.com/steam/apps/{{.AppID}}/header.jpg"
+                    onerror="this.src='https://via.placeholder.com/460x215/2a475e/ffffff?text={{.Name}}'"
+                    alt="{{.Name}}"
                 />
                 <div class="game-info">
                     <h2>{{.Name}}</h2>
-                    <p class="playtime">{{.PlaytimeForever}} min</p>
+                    <div class="stats">
+                        <p>
+                            Temps de jeu :
+                            <span class="playtime"
+                                >{{.PlaytimeForever}} min</span
+                            >
+                        </p>
+                        <p class="appid-text">AppID : {{.AppID}}</p>
+                    </div>
                 </div>
+            </div>
+            {{else}}
+            <div class="no-results">
+                <p>
+                    Aucun jeu trouvé. Vérifiez que le profil est
+                    <strong>Public</strong>.
+                </p>
+                <p><small>ID de test : 76561198084134106</small></p>
             </div>
             {{end}}
         </main>
 
         <script>
             const steamID = "{{.SteamID}}";
-            const msg = document.getElementById("status-msg");
 
-            function sync() {
-                msg.innerText = "⏳ Synchronisation...";
+            function syncToSupabase() {
+                const btn = document.getElementById("btn-sync");
+                const msg = document.getElementById("sync-message");
+                btn.disabled = true;
+                btn.textContent = "⏳ Sauvegarde en cours...";
+                msg.textContent = "";
+
                 fetch(`/sync?iduser=${steamID}`)
                     .then((r) => r.json())
-                    .then((d) => (msg.innerText = "✅ " + d.message))
-                    .catch(() => (msg.innerText = "❌ Erreur"));
+                    .then((data) => {
+                        if (data.error) {
+                            msg.textContent = "❌ " + data.error;
+                            msg.style.color = "#ff6b6b";
+                        } else {
+                            msg.textContent = "✅ " + data.message;
+                            msg.style.color = "#66c0f4";
+                        }
+                    })
+                    .catch(() => {
+                        msg.textContent = "❌ Erreur réseau";
+                        msg.style.color = "#ff6b6b";
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.textContent =
+                            "💾 Sauvegarder le Top 5 dans Supabase";
+                    });
             }
 
-            function showTop() {
+            function showTopGames() {
+                const container = document.getElementById(
+                    "top-table-container",
+                );
+                container.innerHTML =
+                    '<p style="color:#66c0f4">⏳ Chargement...</p>';
+
                 fetch(`/top?iduser=${steamID}`)
                     .then((r) => r.json())
                     .then((data) => {
-                        let html = `<table class="top-table">`;
-                        [
+                        if (data.error) {
+                            container.innerHTML = `<p style="color:#ff6b6b">❌ ${data.error} — Cliquez sur Sauvegarder d'abord.</p>`;
+                            return;
+                        }
+                        const games = [
                             data.Game1,
                             data.Game2,
                             data.Game3,
                             data.Game4,
                             data.Game5,
-                        ].forEach((g, i) => {
-                            if (g)
-                                html += `<tr><td>#${i + 1}</td><td>${g}</td></tr>`;
-                        });
-                        document.getElementById(
-                            "top-table-container",
-                        ).innerHTML = html + "</table>";
-                    });
-            }
+                        ].filter((g) => g && g.trim() !== "");
 
-            function remove() {
-                if (!confirm("Supprimer vos données ?")) return;
-                fetch(`/delete?iduser=${steamID}`)
-                    .then((r) => r.json())
-                    .then((d) => {
-                        alert(d.message);
-                        document.getElementById(
-                            "top-table-container",
-                        ).innerHTML = "";
+                        let html = `<table class="top-table">
+                        <thead><tr><th>#</th><th>Jeu (temps de jeu)</th></tr></thead>
+                        <tbody>`;
+                        games.forEach((g, i) => {
+                            html += `<tr><td>${i + 1}</td><td>${g}</td></tr>`;
+                        });
+                        html += "</tbody></table>";
+                        container.innerHTML = html;
+                    })
+                    .catch(() => {
+                        container.innerHTML =
+                            '<p style="color:#ff6b6b">❌ Erreur réseau</p>';
                     });
             }
         </script>
