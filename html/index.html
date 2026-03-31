@@ -126,8 +126,8 @@
                         ].filter((g) => g && g.trim() !== "");
 
                         let html = `<table class="top-table">
-                        <thead><tr><th>#</th><th>Jeu (temps de jeu)</th></tr></thead>
-                        <tbody>`;
+                            <thead><tr><th>#</th><th>Jeu (temps de jeu)</th></tr></thead>
+                            <tbody>`;
                         games.forEach((g, i) => {
                             html += `<tr><td>${i + 1}</td><td>${g}</td></tr>`;
                         });
@@ -137,6 +137,37 @@
                     .catch(() => {
                         container.innerHTML =
                             '<p style="color:#ff6b6b">❌ Erreur réseau</p>';
+                    });
+            }
+
+            function deleteData() {
+                const btn = document.getElementById("btn-delete");
+                const msg = document.getElementById("sync-message");
+                btn.disabled = true;
+                btn.textContent = "⏳ Suppression...";
+                msg.textContent = "";
+
+                fetch(`/delete?iduser=${steamID}`)
+                    .then((r) => r.json())
+                    .then((data) => {
+                        if (data.error) {
+                            msg.textContent = "❌ " + data.error;
+                            msg.style.color = "#ff6b6b";
+                        } else {
+                            msg.textContent = "✅ " + data.message;
+                            msg.style.color = "#66c0f4";
+                            document.getElementById(
+                                "top-table-container",
+                            ).innerHTML = "";
+                        }
+                    })
+                    .catch(() => {
+                        msg.textContent = "❌ Erreur réseau";
+                        msg.style.color = "#ff6b6b";
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.textContent = "🗑️ Supprimer";
                     });
             }
         </script>
