@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 
-	"gorm.io/gorm"
 	"main.go/api"
 )
 
