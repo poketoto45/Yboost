@@ -59,10 +59,14 @@ func GetGameAchievements(apiKey string, steamID string, appID int) ([]Achievemen
 	)
 
 	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("erreur ou profil privé")
+	if err != nil {
+		return nil, fmt.Errorf("erreur requête achievements : %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("erreur ou profil privé")
+	}
 
 	var data struct {
 		PlayerStats struct {
@@ -70,18 +74,9 @@ func GetGameAchievements(apiKey string, steamID string, appID int) ([]Achievemen
 		} `json:"playerstats"`
 	}
 
-	json.NewDecoder(resp.Body).Decode(&data)
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, fmt.Errorf("erreur décodage achievements : %w", err)
+	}
+
 	return data.PlayerStats.Achievements, nil
 }
-```
-
-**go.mod** — vérifie que le tien ressemble à ça :
-```
-module main.go
-
-go 1.21
-
-require (
-    gorm.io/driver/postgres v1.5.7
-    gorm.io/gorm v1.25.10
-)
