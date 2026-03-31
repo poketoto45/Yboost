@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"gorm.io/gorm"
 	"main.go/api"
 )
 
@@ -33,41 +34,34 @@ func SyncTopGames(steamID string, allGames []api.OwnedGame) error {
 		names[i] = formatGame(allGames[i])
 	}
 
-	// Vérifie si une ligne existe déjà pour ce steamID
-	var count int64
-	db.Model(&SteamDB{}).Where("steam_id = ?", steamID).Count(&count)
-
-	if count == 0 {
-		// INSERT
-		entry := SteamDB{
-			SteamID: steamID,
-			Game1:   names[0],
-			Game2:   names[1],
-			Game3:   names[2],
-			Game4:   names[3],
-			Game5:   names[4],
-		}
-		return db.Create(&entry).Error
-	}
-
-	// UPDATE direct sans passer par Save
-	return db.Model(&SteamDB{}).
-		Where("steam_id = ?", steamID).
-		Updates(map[string]interface{}{
-			"game1": names[0],
-			"game2": names[1],
-			"game3": names[2],
-			"game4": names[3],
-			"game5": names[4],
-		}).Error
+	// SQL brut : INSERT ... ON CONFLICT (steam_id) DO UPDATE
+	// C'est la méthode la plus fiable avec Supabase/Postgres
+	sql := `
+		INSERT INTO "steamDB" (steam_id, game1, game2, game3, game4, game5)
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT (steam_id) DO UPDATE SET
+			game1 = EXCLUDED.game1,
+			game2 = EXCLUDED.game2,
+			game3 = EXCLUDED.game3,
+			game4 = EXCLUDED.game4,
+			game5 = EXCLUDED.game5
+	`
+	return db.Exec(sql, steamID, names[0], names[1], names[2], names[3], names[4]).Error
 }
 
 func GetTopGamesFromDB(steamID string) (*SteamDB, error) {
 	var row SteamDB
 	err := db.Where("steam_id = ?", steamID).First(&row).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("aucune donnée pour ce joueur")
+	}
 	return &row, err
 }
 
 func DeleteTopGames(steamID string) error {
-	return db.Where("steam_id = ?", steamID).Delete(&SteamDB{}).Error
+	result := db.Where("steam_id = ?", steamID).Delete(&SteamDB{})
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("aucune donnée trouvée pour ce joueur")
+	}
+	return result.Error
 }
