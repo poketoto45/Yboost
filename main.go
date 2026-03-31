@@ -19,14 +19,17 @@ func main() {
 		port = "8080"
 	}
 
+	// Servir les fichiers statiques (CSS)
 	fs := http.FileServer(http.Dir("html"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
+	// Routes
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/sync", syncHandler)
 	http.HandleFunc("/top", topGamesHandler)
+	http.HandleFunc("/delete", deleteHandler)
 
-	fmt.Printf("Serveur lancé sur le port %s...\n", port)
+	fmt.Printf("🚀 Serveur lancé sur le port %s...\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("Erreur serveur : ", err)
 	}
@@ -40,22 +43,26 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if apiKey == "" || steamID == "" {
-		http.Error(w, "Configuration manquante", 500)
+		http.Error(w, "Configuration API_KEY ou STEAM_ID manquante", 500)
 		return
 	}
 
 	games, err := api.GetOwnedGames(apiKey, steamID)
 	if err != nil {
-		http.Error(w, "Impossible de récupérer les jeux : "+err.Error(), 500)
+		// On affiche quand même la page mais avec une erreur
+		renderTemplate(w, "html/index.html", nil, steamID)
 		return
 	}
 
-	tpl, err := template.ParseFiles("html/index.html")
+	renderTemplate(w, "html/index.html", games, steamID)
+}
+
+func renderTemplate(w http.ResponseWriter, path string, games []api.OwnedGame, steamID string) {
+	tpl, err := template.ParseFiles(path)
 	if err != nil {
-		http.Error(w, "Fichier HTML introuvable", 500)
+		http.Error(w, "Erreur template", 500)
 		return
 	}
-
 	data := struct {
 		Games   []api.OwnedGame
 		SteamID string
@@ -63,24 +70,13 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		Games:   games,
 		SteamID: steamID,
 	}
-
 	tpl.Execute(w, data)
 }
 
 func syncHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
 	apiKey := os.Getenv("API_KEY")
 	steamID := r.URL.Query().Get("iduser")
-	if steamID == "" {
-		steamID = os.Getenv("STEAM_ID")
-	}
-
-	if apiKey == "" || steamID == "" {
-		w.WriteHeader(400)
-		json.NewEncoder(w).Encode(map[string]string{"error": "steamID ou API_KEY manquant"})
-		return
-	}
 
 	games, err := api.GetOwnedGames(apiKey, steamID)
 	if err != nil {
@@ -91,30 +87,34 @@ func syncHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := SyncTopGames(steamID, games); err != nil {
 		w.WriteHeader(500)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		json.NewEncoder(w).Encode(map[string]string{"error": "Erreur DB: " + err.Error()})
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{
-		"status":  "ok",
-		"message": "Top 5 sauvegardé dans Supabase !",
-	})
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Top 5 synchronisé !"})
 }
 
 func topGamesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
 	steamID := r.URL.Query().Get("iduser")
-	if steamID == "" {
-		steamID = os.Getenv("STEAM_ID")
-	}
 
 	row, err := GetTopGamesFromDB(steamID)
 	if err != nil {
 		w.WriteHeader(404)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Aucune donnée pour ce joueur"})
+		json.NewEncoder(w).Encode(map[string]string{"error": "Données introuvables"})
 		return
 	}
-
 	json.NewEncoder(w).Encode(row)
+}
+
+func deleteHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	steamID := r.URL.Query().Get("iduser")
+
+	if err := DeleteTopGames(steamID); err != nil {
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Données supprimées avec succès"})
 }
