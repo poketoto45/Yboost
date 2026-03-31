@@ -6,7 +6,6 @@ import (
 	"net/http"
 )
 
-// 1. Les structures en haut
 type OwnedGame struct {
 	AppID           int           `json:"appid"`
 	Name            string        `json:"name"`
@@ -25,27 +24,39 @@ type SteamResponse struct {
 	} `json:"response"`
 }
 
-// 2. Ta fonction GetOwnedGames
 func GetOwnedGames(apiKey string, steamID string) ([]OwnedGame, error) {
-	url := fmt.Sprintf("https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json&include_appinfo=1", apiKey, steamID)
+	url := fmt.Sprintf(
+		"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json&include_appinfo=1",
+		apiKey, steamID,
+	)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("erreur requête Steam : %w", err)
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Steam a répondu avec le code %d", resp.StatusCode)
+	}
+
 	var data SteamResponse
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("erreur décodage JSON : %w", err)
+	}
+
+	if len(data.Response.Games) == 0 {
+		return nil, fmt.Errorf("aucun jeu trouvé — profil privé ou SteamID invalide")
 	}
 
 	return data.Response.Games, nil
 }
 
-// 3. Ta nouvelle fonction pour les succès
 func GetGameAchievements(apiKey string, steamID string, appID int) ([]Achievement, error) {
-	url := fmt.Sprintf("https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=%d&key=%s&steamid=%s", appID, apiKey, steamID)
+	url := fmt.Sprintf(
+		"https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=%d&key=%s&steamid=%s",
+		appID, apiKey, steamID,
+	)
 
 	resp, err := http.Get(url)
 	if err != nil || resp.StatusCode != http.StatusOK {
@@ -62,3 +73,15 @@ func GetGameAchievements(apiKey string, steamID string, appID int) ([]Achievemen
 	json.NewDecoder(resp.Body).Decode(&data)
 	return data.PlayerStats.Achievements, nil
 }
+```
+
+**go.mod** — vérifie que le tien ressemble à ça :
+```
+module main.go
+
+go 1.21
+
+require (
+    gorm.io/driver/postgres v1.5.7
+    gorm.io/gorm v1.25.10
+)

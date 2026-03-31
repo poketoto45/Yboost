@@ -3,44 +3,46 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// Le struct TopGame est supprimé d'ici car il est déjà dans database.go
 var db *gorm.DB
 
 func initDB() {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		log.Fatal("La variable d'environnement DATABASE_URL est requise")
+		log.Fatal("DATABASE_URL manquant")
+	}
+
+	// Supabase requiert SSL
+	if !strings.Contains(dsn, "sslmode") {
+		if strings.Contains(dsn, "?") {
+			dsn += "&sslmode=require"
+		} else {
+			dsn += "?sslmode=require"
+		}
 	}
 
 	var err error
-	// CHANGEMENT : On ouvre la connexion AVANT de migrer
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Impossible de se connecter à la base de données : %v", err)
+		log.Fatalf("Connexion DB impossible : %v", err)
 	}
 
-	// CHANGEMENT : Supprimé &Note{} qui n'existe pas, gardé uniquement &TopGame{}
 	if err := db.AutoMigrate(&TopGame{}); err != nil {
-		log.Printf("Avertissement migration : %v", err)
+		log.Fatalf("Migration échouée : %v", err)
 	}
 
-	// Récupère la connexion SQL sous-jacente
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Printf("Erreur lors de la récupération de la connexion SQL : %v", err)
-	} else {
-		if err := sqlDB.Ping(); err != nil {
-			log.Fatalf("Impossible de ping la base : %v", err)
-		}
-		log.Printf("✓ Connexion à la base établie")
-		log.Printf("✓ Max open connections: %d", sqlDB.Stats().MaxOpenConnections)
-		log.Printf("✓ Connexions actives: %d", sqlDB.Stats().OpenConnections)
+		log.Fatalf("Erreur SQL DB : %v", err)
+	}
+	if err := sqlDB.Ping(); err != nil {
+		log.Fatalf("Ping DB échoué : %v", err)
 	}
 
-	log.Println("Base de données connectée et migrée avec succès")
+	log.Println("✓ Base de données connectée et migrée")
 }
