@@ -23,8 +23,8 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/sync", syncHandler)       // bouton "Sauvegarder"
-	http.HandleFunc("/top", topGamesHandler)    // bouton "Voir le tableau"
+	http.HandleFunc("/sync", syncHandler)
+	http.HandleFunc("/top", topGamesHandler)
 
 	fmt.Printf("Serveur lancé sur le port %s...\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
@@ -67,7 +67,6 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	tpl.Execute(w, data)
 }
 
-// /sync : appel AJAX depuis le bouton "Sauvegarder dans Supabase"
 func syncHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -102,7 +101,6 @@ func syncHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// /top : retourne le tableau depuis Supabase
 func topGamesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -111,12 +109,12 @@ func topGamesHandler(w http.ResponseWriter, r *http.Request) {
 		steamID = os.Getenv("STEAM_ID")
 	}
 
-	games, err := GetTopGamesFromDB(steamID)
+	row, err := GetTopGamesFromDB(steamID)
 	if err != nil {
-		w.WriteHeader(500)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		w.WriteHeader(404)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Aucune donnée pour ce joueur"})
 		return
 	}
 
-	json.NewEncoder(w).Encode(games)
+	json.NewEncoder(w).Encode(row)
 }

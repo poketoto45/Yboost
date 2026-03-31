@@ -82,7 +82,7 @@
                     .then((r) => r.json())
                     .then((data) => {
                         if (data.error) {
-                            msg.textContent = "❌ Erreur : " + data.error;
+                            msg.textContent = "❌ " + data.error;
                             msg.style.color = "#ff6b6b";
                         } else {
                             msg.textContent = "✅ " + data.message;
@@ -109,23 +109,24 @@
 
                 fetch(`/top?iduser=${steamID}`)
                     .then((r) => r.json())
-                    .then((games) => {
-                        if (!games.length) {
-                            container.innerHTML =
-                                '<p style="color:#ff6b6b">Aucune donnée en base. Cliquez sur Sauvegarder d\'abord.</p>';
+                    .then((data) => {
+                        if (data.error) {
+                            container.innerHTML = `<p style="color:#ff6b6b">❌ ${data.error} — Cliquez sur Sauvegarder d'abord.</p>`;
                             return;
                         }
+                        const games = [
+                            data.Game1,
+                            data.Game2,
+                            data.Game3,
+                            data.Game4,
+                            data.Game5,
+                        ].filter((g) => g && g.trim() !== "");
+
                         let html = `<table class="top-table">
-                        <thead><tr><th>#</th><th>Jeu</th><th>Temps de jeu</th></tr></thead>
+                        <thead><tr><th>#</th><th>Jeu (temps de jeu)</th></tr></thead>
                         <tbody>`;
                         games.forEach((g, i) => {
-                            const hours = Math.floor(g.PlaytimeForever / 60);
-                            const mins = g.PlaytimeForever % 60;
-                            html += `<tr>
-                            <td>${i + 1}</td>
-                            <td>${g.Name}</td>
-                            <td>${hours}h ${mins}min</td>
-                        </tr>`;
+                            html += `<tr><td>${i + 1}</td><td>${g}</td></tr>`;
                         });
                         html += "</tbody></table>";
                         container.innerHTML = html;
