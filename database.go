@@ -51,15 +51,18 @@ func SyncTopGames(steamID string, allGames []api.OwnedGame) error {
 
 func GetTopGamesFromDB(steamID string) (*SteamDB, error) {
 	var row SteamDB
-	err := db.Where("steam_id = ?", steamID).First(&row).Error
-	if err == gorm.ErrRecordNotFound {
+	err := db.Raw(`SELECT * FROM "steamDB" WHERE steam_id = ? LIMIT 1`, steamID).Scan(&row).Error
+	if err != nil {
+		return nil, err
+	}
+	if row.SteamID == "" {
 		return nil, fmt.Errorf("aucune donnée pour ce joueur")
 	}
-	return &row, err
+	return &row, nil
 }
 
 func DeleteTopGames(steamID string) error {
-	result := db.Where("steam_id = ?", steamID).Delete(&SteamDB{})
+	result := db.Exec(`DELETE FROM "steamDB" WHERE steam_id = ?`, steamID)
 	if result.RowsAffected == 0 {
 		return fmt.Errorf("aucune donnée trouvée pour ce joueur")
 	}
