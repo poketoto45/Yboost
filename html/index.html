@@ -19,18 +19,18 @@
                     <button type="submit">Afficher la bibliothèque</button>
                 </form>
             </div>
-            <h1>🎮 Ma Collection Steam</h1>
+            <h1>Ma Collection Steam</h1>
 
             {{if .SteamID}}
             <div class="crud-buttons">
                 <button id="btn-sync" onclick="syncToSupabase()">
-                    💾 Sauvegarder le Top 5 dans Supabase
+                    Sauvegarder le Top 5 dans Supabase
                 </button>
                 <button id="btn-top" onclick="showTopGames()">
-                    📊 Voir le tableau Supabase
+                    Voir le tableau Supabase
                 </button>
                 <button id="btn-delete" onclick="deleteData()">
-                    🗑️ Supprimer
+                    Supprimer
                 </button>
             </div>
             <div id="sync-message"></div>
@@ -78,7 +78,7 @@
                 const btn = document.getElementById("btn-sync");
                 const msg = document.getElementById("sync-message");
                 btn.disabled = true;
-                btn.textContent = "⏳ Sauvegarde en cours...";
+                btn.textContent = "Sauvegarde en cours...";
                 msg.textContent = "";
 
                 fetch(`/sync?iduser=${steamID}`)
@@ -167,7 +167,7 @@
                     })
                     .finally(() => {
                         btn.disabled = false;
-                        btn.textContent = "🗑️ Supprimer";
+                        btn.textContent = "Supprimer";
                     });
             }
         </script>
