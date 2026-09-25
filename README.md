@@ -1,7 +1,7 @@
 # Yboost — Steam Library Explorer
 
 Application web en Go qui affiche ta bibliothèque Steam et sauvegarde ton Top 5 des jeux les plus joués dans une base de données Supabase.
-  s
+
 ---
 
 ## Stack technique
